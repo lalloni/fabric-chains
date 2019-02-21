@@ -69,6 +69,31 @@ func TestIteratorToByteArrays(t *testing.T) {
 	}
 }
 
+func TestIteratorToArray(t *testing.T) {
+	stub := shim.NewMockStub("bla", &cc{})
+	stub.MockTransactionStart("a")
+	c := New([]string{"data"}, JSONMarshaller())
+	if err := c.Accessor(stub).Put([]string{"i"}, Data{"a", 1}); err != nil {
+		t.Fatal(err)
+	}
+	if err := c.Accessor(stub).Put([]string{"j"}, Data{"b", 2}); err != nil {
+		t.Fatal(err)
+	}
+	stub.MockTransactionEnd("a")
+	it := &iter{
+		stub:       stub,
+		marshaller: JSONMarshaller(),
+	}
+	ds, err := it.ToArray(&Data{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []interface{}{&Data{"a", 1}, &Data{"b", 2}}
+	if !reflect.DeepEqual(want, ds) {
+		t.Error("not equal")
+	}
+}
+
 func TestIteratorClose(t *testing.T) {
 	stub := shim.NewMockStub("bla", &cc{})
 	istub := shim.NewMockStateRangeQueryIterator(stub, "a", "b")

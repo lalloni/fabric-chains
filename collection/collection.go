@@ -139,7 +139,8 @@ func (a *acc) Remove(key []string) error {
 
 func (a *acc) Iterator() (Iterator, error) {
 	return &iter{
-		stub:      a.stub,
-		namespace: a.namespace,
+		stub:       a.stub,
+		namespace:  a.namespace,
+		marshaller: a.marshaller,
 	}, nil
 }

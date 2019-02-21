@@ -1,6 +1,8 @@
 package collection
 
 import (
+	"reflect"
+
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	"github.com/pkg/errors"
 )
@@ -10,15 +12,16 @@ type Iterator interface {
 	HasNext() (bool, error)
 	Next(v interface{}) (bool, error)
 	NextBytes() ([]byte, error)
-	ToArray(vs []interface{}) error
+	ToArray(interface{}) ([]interface{}, error)
 	ToByteArrays() ([][]byte, error)
 	Close() error
 }
 
 type iter struct {
-	stub      shim.ChaincodeStubInterface
-	namespace []string
-	state     shim.StateQueryIteratorInterface
+	stub       shim.ChaincodeStubInterface
+	namespace  []string
+	state      shim.StateQueryIteratorInterface
+	marshaller Marshaller
 }
 
 var _ Iterator = &iter{}
@@ -51,8 +54,32 @@ func (i *iter) HasNext() (bool, error) {
 	return i.state.HasNext(), nil
 }
 
-func (i *iter) ToArray(vs []interface{}) error {
-	return errors.New("not implemented")
+func (i *iter) ToArray(t interface{}) ([]interface{}, error) {
+	if reflect.TypeOf(t).Kind() != reflect.Ptr {
+		return nil, errors.New("target type must be pointer")
+	}
+	tt := reflect.ValueOf(t).Elem().Type()
+	rs := []interface{}{}
+	for {
+		hn, err := i.HasNext()
+		if err != nil {
+			return nil, errors.WithStack(err)
+		}
+		if !hn {
+			break
+		}
+		bs, err := i.NextBytes()
+		if err != nil {
+			return nil, errors.WithStack(err)
+		}
+		v := reflect.New(tt).Interface()
+		err = i.marshaller.Unmarshal(bs, v)
+		if err != nil {
+			return nil, errors.WithStack(err)
+		}
+		rs = append(rs, v)
+	}
+	return rs, nil
 }
 
 func (i *iter) ToByteArrays() ([][]byte, error) {

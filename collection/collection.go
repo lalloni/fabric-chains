@@ -7,10 +7,14 @@ import (
 
 const objectType = "_COLITE"
 
+// Collection is the main interface
 type Collection interface {
+	// Accessor receives a stub and returns an Accessor which must be used to
+	// operate against the Collection
 	Accessor(shim.ChaincodeStubInterface) Accessor
 }
 
+// Accessor allows to operate against a Collection
 type Accessor interface {
 	Get(key []string, v interface{}) (bool, error)
 	GetBytes(key []string) ([]byte, error)
@@ -20,6 +24,9 @@ type Accessor interface {
 	Iterator() (Iterator, error)
 }
 
+// New is the main entry point to the library allowing to creare a Collection.
+// key will be used as prefix for all Collection items' keys.
+// m is only required if the client will use automatic un/marshaling of structs.
 func New(key []string, m Marshaller) Collection {
 	return &coll{
 		namespace:  key,

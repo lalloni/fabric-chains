@@ -5,6 +5,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// Iterator allows to get all elements in the collection
 type Iterator interface {
 	HasNext() (bool, error)
 	Next(v interface{}) (bool, error)
